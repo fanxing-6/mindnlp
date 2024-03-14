@@ -24,7 +24,6 @@ from ...tokenization_utils_fast import PreTrainedTokenizerFast
 
 from .tokenization_layoutlm import LayoutLMTokenizer
 
-
 logger = logging.get_logger(__name__)
 
 VOCAB_FILES_NAMES = {"vocab_file": "vocab.txt", "tokenizer_file": "tokenizer.json"}
@@ -107,18 +106,18 @@ class LayoutLMTokenizerFast(PreTrainedTokenizerFast):
     slow_tokenizer_class = LayoutLMTokenizer
 
     def __init__(
-        self,
-        vocab_file=None,
-        tokenizer_file=None,
-        do_lower_case=True,
-        unk_token="[UNK]",
-        sep_token="[SEP]",
-        pad_token="[PAD]",
-        cls_token="[CLS]",
-        mask_token="[MASK]",
-        tokenize_chinese_chars=True,
-        strip_accents=None,
-        **kwargs,
+            self,
+            vocab_file=None,
+            tokenizer_file=None,
+            do_lower_case=True,
+            unk_token="[UNK]",
+            sep_token="[SEP]",
+            pad_token="[PAD]",
+            cls_token="[CLS]",
+            mask_token="[MASK]",
+            tokenize_chinese_chars=True,
+            strip_accents=None,
+            **kwargs,
     ):
         super().__init__(
             vocab_file,
@@ -136,9 +135,9 @@ class LayoutLMTokenizerFast(PreTrainedTokenizerFast):
 
         normalizer_state = json.loads(self.backend_tokenizer.normalizer.__getstate__())
         if (
-            normalizer_state.get("lowercase", do_lower_case) != do_lower_case
-            or normalizer_state.get("strip_accents", strip_accents) != strip_accents
-            or normalizer_state.get("handle_chinese_chars", tokenize_chinese_chars) != tokenize_chinese_chars
+                normalizer_state.get("lowercase", do_lower_case) != do_lower_case
+                or normalizer_state.get("strip_accents", strip_accents) != strip_accents
+                or normalizer_state.get("handle_chinese_chars", tokenize_chinese_chars) != tokenize_chinese_chars
         ):
             normalizer_class = getattr(normalizers, normalizer_state.pop("type"))
             normalizer_state["lowercase"] = do_lower_case
@@ -173,7 +172,7 @@ class LayoutLMTokenizerFast(PreTrainedTokenizerFast):
         return output
 
     def create_token_type_ids_from_sequences(
-        self, token_ids_0: List[int], token_ids_1: Optional[List[int]] = None
+            self, token_ids_0: List[int], token_ids_1: Optional[List[int]] = None
     ) -> List[int]:
         """
         Create a mask from the two sequences passed to be used in a sequence-pair classification task. A LayoutLM sequence
@@ -204,3 +203,6 @@ class LayoutLMTokenizerFast(PreTrainedTokenizerFast):
     def save_vocabulary(self, save_directory: str, filename_prefix: Optional[str] = None) -> Tuple[str]:
         files = self._tokenizer.model.save(save_directory, name=filename_prefix)
         return tuple(files)
+
+
+__all__ = ["LayoutLMTokenizerFast"]

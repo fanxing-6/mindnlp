@@ -28,7 +28,7 @@ from collections import OrderedDict
 from itertools import takewhile
 from typing import TYPE_CHECKING, Any, Dict, List, Tuple, Union
 
-from parameterized import parameterized
+
 
 from mindnlp.transformers import (
     AlbertTokenizer,

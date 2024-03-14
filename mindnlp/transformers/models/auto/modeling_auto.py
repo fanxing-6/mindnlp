@@ -54,6 +54,7 @@ MODEL_MAPPING_NAMES = OrderedDict(
         ("gpt2", "GPT2Model"),
         ("gpt_pangu", "GPTPanguModel"),
         ("longformer", "LongformerModel"),
+        ("layoutml","LayoutLMModel"),
         ('mbart','MBartModel'),
         ('minicpm', 'MiniCPMModel'),
         ("mistral", "MistralModel"),

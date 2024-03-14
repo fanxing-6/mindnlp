@@ -46,6 +46,7 @@ from . import (
     gpt_pangu,
     graphormer,
     hubert,
+    layoutlm,
     llama,
     longformer,
     luke,
@@ -71,6 +72,7 @@ from . import (
     whisper,
     xlm,
     xlm_roberta,
+
 )
 
 from .albert import *
@@ -103,6 +105,7 @@ from .gpt_pangu import *
 from .gpt2 import *
 from .graphormer import *
 from .hubert import *
+from .layoutlm import *
 from .llama import *
 from .longformer import *
 from .luke import *
@@ -128,6 +131,7 @@ from .xlm import *
 from .xlm_roberta import *
 from .whisper import *
 from .wav2vec2 import *
+
 
 __all__ = []
 __all__.extend(albert.__all__)
@@ -160,6 +164,7 @@ __all__.extend(gpt_bigcode.__all__)
 __all__.extend(gpt2.__all__)
 __all__.extend(graphormer.__all__)
 __all__.extend(hubert.__all__)
+__all__.extend(layoutlm.__all__)
 __all__.extend(llama.__all__)
 __all__.extend(longformer.__all__)
 __all__.extend(luke.__all__)

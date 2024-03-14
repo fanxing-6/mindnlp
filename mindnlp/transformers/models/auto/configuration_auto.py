@@ -65,6 +65,7 @@ CONFIG_MAPPING_NAMES = OrderedDict(
         ('t5', 'T5Config'),
         ('wav2vec2', 'Wav2Vec2Config'),
         ('xlm-roberta', 'XLMRobertaConfig'),
+        ('layoutlm', 'LayoutLMConfig'),
     ]
 )
 
@@ -171,6 +172,7 @@ CONFIG_ARCHIVE_MAP_MAPPING_NAMES = OrderedDict(
         ("lxmert", "LXMERT_PRETRAINED_CONFIG_ARCHIVE_MAP"),
         ("m2m_100", "M2M_100_PRETRAINED_CONFIG_ARCHIVE_MAP"),
         ("markuplm", "MARKUPLM_PRETRAINED_CONFIG_ARCHIVE_MAP"),
+        ("layoutlm", "LAYOUTLM_PRETRAINED_CONFIG_ARCHIVE_MAP"),
         ("mask2former", "MASK2FORMER_PRETRAINED_CONFIG_ARCHIVE_MAP"),
         ("maskformer", "MASKFORMER_PRETRAINED_CONFIG_ARCHIVE_MAP"),
         ("mbart", "MBART_PRETRAINED_CONFIG_ARCHIVE_MAP"),

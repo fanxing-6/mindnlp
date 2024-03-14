@@ -106,10 +106,9 @@ SUPPORTED_TASKS = {
     },
     "document-question-answering": {
         "impl": DocumentQuestionAnsweringPipeline,
-        "pt": (AutoModelForDocumentQuestionAnswering,),
-        "tf": (),
+        "ms": (AutoModelForDocumentQuestionAnswering,),
         "default": {
-            "model": {"pt": ("layoutlm-document-qa", "52e01b3")},
+            "model": {"ms": ("layoutlm-document-qa", "52e01b3")},
         },
         "type": "multimodal",
     },

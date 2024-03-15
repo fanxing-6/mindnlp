@@ -64,7 +64,9 @@ from .import_utils import (
     is_pretty_midi_available,
     is_scipy_available,
     is_pyctcdecode_available,
-    is_vision_available
+    is_vision_available,
+    is_detectron2_available,
+    is_pytesseract_available
 )
 from .generic import strtobool
 
@@ -89,9 +91,9 @@ else:
 if is_mindspore_available():
     from mindspore import ops
 
-
 DUMMY_UNKNOWN_IDENTIFIER = "julien-c/dummy-unknown"
 SMALL_MODEL_IDENTIFIER = "julien-c/bert-xsmall-dummy"
+
 
 def is_pipeline_test(test_case):
     """
@@ -108,6 +110,7 @@ def is_pipeline_test(test_case):
         else:
             return pytest.mark.is_pipeline_test()(test_case)
 
+
 def parse_flag_from_env(key, default=False):
     try:
         value = os.environ[key]
@@ -123,9 +126,11 @@ def parse_flag_from_env(key, default=False):
             raise ValueError(f"If set, {key} must be yes or no.") from exc
     return _value
 
+
 _run_slow_tests = parse_flag_from_env("RUN_SLOW", default=False)
 _run_too_slow_tests = parse_flag_from_env("RUN_TOO_SLOW", default=False)
 _run_pipeline_tests = parse_flag_from_env("RUN_PIPELINE_TESTS", default=True)
+
 
 def slow(test_case):
     """
@@ -136,6 +141,7 @@ def slow(test_case):
     """
     return unittest.skipUnless(_run_slow_tests, "test is slow")(test_case)
 
+
 def tooslow(test_case):
     """
     Decorator marking a test as too slow.
@@ -145,6 +151,7 @@ def tooslow(test_case):
 
     """
     return unittest.skipUnless(_run_too_slow_tests, "test is too slow")(test_case)
+
 
 def parse_int_from_env(key, default=None):
     try:
@@ -168,11 +175,13 @@ def require_mindspore(test_case):
     """
     return unittest.skipUnless(is_mindspore_available(), "test requires MindSpore")(test_case)
 
+
 def require_librosa(test_case):
     """
     Decorator marking a test that requires librosa
     """
     return unittest.skipUnless(is_librosa_available(), "test requires librosa")(test_case)
+
 
 def require_essentia(test_case):
     """
@@ -180,11 +189,13 @@ def require_essentia(test_case):
     """
     return unittest.skipUnless(is_essentia_available(), "test requires essentia")(test_case)
 
+
 def require_pretty_midi(test_case):
     """
     Decorator marking a test that requires pretty_midi
     """
     return unittest.skipUnless(is_pretty_midi_available(), "test requires pretty_midi")(test_case)
+
 
 def require_scipy(test_case):
     """
@@ -192,11 +203,13 @@ def require_scipy(test_case):
     """
     return unittest.skipUnless(is_scipy_available(), "test requires Scipy")(test_case)
 
+
 def require_pyctcdecode(test_case):
     """
     Decorator marking a test that requires pyctcdecode
     """
     return unittest.skipUnless(is_pyctcdecode_available(), "test requires pyctcdecode")(test_case)
+
 
 def require_vision(test_case):
     """
@@ -206,8 +219,24 @@ def require_vision(test_case):
     return unittest.skipUnless(is_vision_available(), "test requires vision")(test_case)
 
 
+def require_pytesseract(test_case):
+    """
+    Decorator marking a test that requires pytesseract. These tests are skipped when pytesseract isn't installed.
+    """
+    return unittest.skipUnless(is_pytesseract_available(), "test requires pytesseract")(test_case)
+
+
+def require_detectron2(test_case):
+    """
+    Decorator marking a test that requires detectron2. These tests are skipped when detectron2 isn't installed.
+    """
+    return unittest.skipUnless(is_detectron2_available(), "test requires detectron2")(test_case)
+
+
 def cmd_exists(cmd):
     return shutil.which(cmd) is not None
+
+
 #
 # Helper functions for dealing with testing text outputs
 # The original code came from:
@@ -1073,6 +1102,7 @@ def run_command(command: List[str], return_stdout=False):
         ) from e
     return None
 
+
 class RequestCounter:
     """
     Helper class that will count all requests made online.
@@ -1110,6 +1140,7 @@ class RequestCounter:
     @property
     def total_calls(self) -> int:
         return sum(self._counter.values())
+
 
 def is_flaky(max_attempts: int = 5, wait_before_retry: Optional[float] = None, description: Optional[str] = None):
     """
@@ -1215,9 +1246,9 @@ def preprocess_string(string, skip_cuda_tests):
         if "load_dataset(" in codeblock and "# doctest: +IGNORE_RESULT" not in codeblock:
             codeblocks[i] = re.sub(r"(>>> .*load_dataset\(.*)", r"\1 # doctest: +IGNORE_RESULT", codeblock)
         if (
-            (">>>" in codeblock or "..." in codeblock)
-            and re.search(r"cuda|to\(0\)|device=0", codeblock)
-            and skip_cuda_tests
+                (">>>" in codeblock or "..." in codeblock)
+                and re.search(r"cuda|to\(0\)|device=0", codeblock)
+                and skip_cuda_tests
         ):
             is_cuda_found = True
             break
@@ -1259,11 +1290,12 @@ class HfDocTestParser(doctest.DocTestParser):
              (?:\n|$)  # Match a new line or end of string
           )*)
         ''', re.MULTILINE | re.VERBOSE
-    )
+                             )
     # fmt: on
 
     # !!!!!!!!!!! HF Specific !!!!!!!!!!!
     skip_cuda_tests: bool = bool(os.environ.get("SKIP_CUDA_DOCTEST", False))
+
     # !!!!!!!!!!! HF Specific !!!!!!!!!!!
 
     def parse(self, string, name="<string>"):
@@ -1363,6 +1395,7 @@ def _device_agnostic_dispatch(device: str, dispatch_table: Dict[str, Callable], 
         return None
     return fn(*args, **kwargs)
 
+
 def get_tests_dir(append_path=None):
     """
     Args:
@@ -1383,6 +1416,7 @@ def get_tests_dir(append_path=None):
     if append_path:
         return os.path.join(tests_dir, append_path)
     return tests_dir
+
 
 def check_json_file_has_correct_format(file_path):
     with open(file_path, "r", encoding='utf-8') as f:

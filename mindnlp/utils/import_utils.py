@@ -70,6 +70,7 @@ _safetensors_available = _is_package_available("safetensors")
 _modelscope_available = _is_package_available("modelscope")
 _jieba_available = _is_package_available("jieba")
 _pytesseract_available = _is_package_available("pytesseract")
+_detectron2_available = _is_package_available("detectron2")
 _mindspore_version, _mindspore_available = _is_package_available(
     "mindspore", return_version=True
 )
@@ -90,6 +91,7 @@ try:
     logger.debug(f"Successfully imported essentia version {_essentia_version}")
 except importlib_metadata.PackageNotFoundError:
     _essentia_version = False
+
 
 def is_mindspore_available():
     return _mindspore_available
@@ -159,6 +161,10 @@ def is_jieba_available():
 
 def is_pytesseract_available():
     return _pytesseract_available
+
+
+def is_detectron2_available():
+    return _detectron2_available
 
 
 @lru_cache()
@@ -298,6 +304,11 @@ PYTESSERACT_IMPORT_ERROR = """
 `pip install pytesseract`. Please note that you may need to restart your runtime after installation.
 """
 
+DETECTRON2_IMPORT_ERROR = """ 
+{0} requires the detectron2 library but it was not found in your environment. You can install it by following the instructions on the installation page: 
+https://detectron2.readthedocs.io/en/latest/tutorials/install.html. 
+"""
+
 BACKENDS_MAPPING = OrderedDict(
     [
         ("cython", (is_cython_available, CYTHON_IMPORT_ERROR)),
@@ -313,6 +324,7 @@ BACKENDS_MAPPING = OrderedDict(
         ("jieba", (is_jieba_available, JIEBA_IMPORT_ERROR)),
         ("vision", (is_vision_available, VISION_IMPORT_ERROR)),
         ("pytesseract", (is_pytesseract_available, PYTESSERACT_IMPORT_ERROR)),
+        ("detectron2", (is_detectron2_available, DETECTRON2_IMPORT_ERROR)),
 
     ]
 )

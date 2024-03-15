@@ -14,7 +14,11 @@
 
 import unittest
 
-from mindnlp.utils.testing_utils import is_pipeline_test, require_vision
+from mindnlp.transformers import MODEL_FOR_DOCUMENT_QUESTION_ANSWERING_MAPPING, pipeline, AutoTokenizer
+from mindnlp.transformers.pipelines.document_question_answering import apply_tesseract
+
+from mindnlp.utils.testing_utils import is_pipeline_test, require_vision, require_pytesseract, require_detectron2, slow, \
+    nested_simplify
 
 from mindnlp.utils import is_vision_available, require_mindspore
 
@@ -119,18 +123,6 @@ class DocumentQuestionAnsweringPipelineTests(unittest.TestCase):
         outputs = dqa_pipeline(image=image, question=question, words=words, boxes=boxes, top_k=2)
         self.assertEqual(outputs, [])
 
-    # 	 TODO: Enable this once hf-internal-testing/tiny-random-donut is implemented
-    #    @require_mindspore
-    #    def test_small_model_pt_donut(self):
-    #        dqa_pipeline = pipeline("document-question-answering", model="hf-internal-testing/tiny-random-donut")
-    #        # dqa_pipeline = pipeline("document-question-answering", model="../tiny-random-donut")
-    #        image = "https://templates.invoicehome.com/invoice-template-us-neat-750px.png"
-    #        question = "How many cats are there?"
-    #
-    #        outputs = dqa_pipeline(image=image, question=question, top_k=2)
-    #        self.assertEqual(
-    #            nested_simplify(outputs, decimals=4), [{"score": 0.8799, "answer": "2"}, {"score": 0.296, "answer": "1"}]
-    #        )
 
     @slow
     @require_mindspore
@@ -351,8 +343,3 @@ class DocumentQuestionAnsweringPipelineTests(unittest.TestCase):
         question = "What is the invoice number?"
         outputs = dqa_pipeline(image=image, question=question, top_k=2)
         self.assertEqual(nested_simplify(outputs, decimals=4), [{"answer": "us-001"}])
-
-    @require_tf
-    @unittest.skip("Document question answering not implemented in TF")
-    def test_small_model_tf(self):
-        pass

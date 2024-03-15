@@ -69,6 +69,7 @@ _pyctcdecode_available = _is_package_available("pyctcdecode")
 _safetensors_available = _is_package_available("safetensors")
 _modelscope_available = _is_package_available("modelscope")
 _jieba_available = _is_package_available("jieba")
+_pytesseract_available = _is_package_available("pytesseract")
 _mindspore_version, _mindspore_available = _is_package_available(
     "mindspore", return_version=True
 )
@@ -109,40 +110,56 @@ def is_sentencepiece_available():
 def is_tokenizers_available():
     return _tokenizers_available
 
+
 def is_safetensors_available():
     return _safetensors_available
+
 
 def is_modelscope_available():
     return _modelscope_available
 
+
 def is_cython_available():
     return importlib.util.find_spec("pyximport") is not None
+
 
 def is_protobuf_available():
     if importlib.util.find_spec("google") is None:
         return False
     return importlib.util.find_spec("google.protobuf") is not None
 
+
 def is_pytest_available():
     return _pytest_available
+
 
 def is_pretty_midi_available():
     return _pretty_midi_available
 
+
 def is_librosa_available():
     return _librosa_available
+
 
 def is_essentia_available():
     return _essentia_available
 
+
 def is_pyctcdecode_available():
     return _pyctcdecode_available
+
 
 def is_scipy_available():
     return _scipy_available
 
+
 def is_jieba_available():
     return _jieba_available
+
+
+def is_pytesseract_available():
+    return _pytesseract_available
+
 
 @lru_cache()
 def is_vision_available():
@@ -157,6 +174,7 @@ def is_vision_available():
                 return False
         logger.debug(f"Detected PIL version {package_version}")
     return _pil_available
+
 
 def is_in_notebook():
     try:
@@ -177,6 +195,7 @@ def is_in_notebook():
         return importlib.util.find_spec("IPython") is not None
     except (AttributeError, ImportError, KeyError):
         return False
+
 
 # docstyle-ignore
 CYTHON_IMPORT_ERROR = """
@@ -201,7 +220,6 @@ working directory, python may try to import this instead of the 🤗 Datasets li
 that python file if that's the case. Please note that you may need to restart your runtime after installation.
 """
 
-
 # docstyle-ignore
 TOKENIZERS_IMPORT_ERROR = """
 {0} requires the 🤗 Tokenizers library but it was not found in your environment. You can install it with:
@@ -215,7 +233,6 @@ In a notebook or a colab, you can install it by executing a cell with
 Please note that you may need to restart your runtime after installation.
 """
 
-
 # docstyle-ignore
 SENTENCEPIECE_IMPORT_ERROR = """
 {0} requires the SentencePiece library but it was not found in your environment. Checkout the instructions on the
@@ -223,14 +240,12 @@ installation page of its repo: https://github.com/google/sentencepiece#installat
 that match your environment. Please note that you may need to restart your runtime after installation.
 """
 
-
 # docstyle-ignore
 PROTOBUF_IMPORT_ERROR = """
 {0} requires the protobuf library but it was not found in your environment. Checkout the instructions on the
 installation page of its repo: https://github.com/protocolbuffers/protobuf/tree/master/python#installation and follow the ones
 that match your environment. Please note that you may need to restart your runtime after installation.
 """
-
 
 # docstyle-ignore
 MINDSPORE_IMPORT_ERROR = """
@@ -278,6 +293,11 @@ VISION_IMPORT_ERROR = """
 `pip install pillow`. Please note that you may need to restart your runtime after installation.
 """
 
+PYTESSERACT_IMPORT_ERROR = """
+{0} requires the pytesseract library but it was not found in your environment. You can install it with pip:
+`pip install pytesseract`. Please note that you may need to restart your runtime after installation.
+"""
+
 BACKENDS_MAPPING = OrderedDict(
     [
         ("cython", (is_cython_available, CYTHON_IMPORT_ERROR)),
@@ -292,6 +312,7 @@ BACKENDS_MAPPING = OrderedDict(
         ("pyctcdecode", (is_pyctcdecode_available, PYCTCDECODE_IMPORT_ERROR)),
         ("jieba", (is_jieba_available, JIEBA_IMPORT_ERROR)),
         ("vision", (is_vision_available, VISION_IMPORT_ERROR)),
+        ("pytesseract", (is_pytesseract_available, PYTESSERACT_IMPORT_ERROR)),
 
     ]
 )

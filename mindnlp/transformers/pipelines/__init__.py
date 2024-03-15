@@ -55,14 +55,14 @@ from .base import (
 from .text_classification import TextClassificationPipeline
 from .text_generation import TextGenerationPipeline
 from .text2text_generation import Text2TextGenerationPipeline
-
+from .document_question_answering import DocumentQuestionAnsweringPipeline
 
 from ..models.auto.modeling_auto import (
     # AutoModel,
     # AutoModelForAudioClassification,
     AutoModelForCausalLM,
     # AutoModelForCTC,
-    # AutoModelForDocumentQuestionAnswering,
+    AutoModelForDocumentQuestionAnswering,
     # AutoModelForMaskedLM,
     # AutoModelForMaskGeneration,
     # AutoModelForObjectDetection,
@@ -81,13 +81,10 @@ from ..models.auto.modeling_auto import (
     # AutoModelForZeroShotObjectDetection,
 )
 
-
 from ..modeling_utils import PreTrainedModel
 from ..tokenization_utils_fast import PreTrainedTokenizerFast
 
-
 logger = logging.get_logger(__name__)
-
 
 # Register all the supported tasks here
 TASK_ALIASES = {
@@ -127,7 +124,15 @@ SUPPORTED_TASKS = {
             },
         },
         "type": "text",
-    }
+    },
+    "document-question-answering": {
+        "impl": DocumentQuestionAnsweringPipeline,
+        "ms": (AutoModelForDocumentQuestionAnswering,),
+        "default": {
+            "model": {"ms": ("layoutlm-document-qa", "52e01b3")},
+        },
+        "type": "multimodal",
+    },
 }
 
 NO_FEATURE_EXTRACTOR_TASKS = set()
@@ -159,6 +164,7 @@ def get_supported_tasks() -> List[str]:
     Returns a list of supported task strings.
     """
     return PIPELINE_REGISTRY.get_supported_tasks()
+
 
 def model_info(
     repo_id: str,
@@ -569,5 +575,6 @@ __all__ = [
     'TextClassificationPipeline',
     'Text2TextGenerationPipeline',
     'TextGenerationPipeline',
+    'DocumentQuestionAnsweringPipeline',
     'pipeline',
 ]

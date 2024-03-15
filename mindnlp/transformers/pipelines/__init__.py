@@ -55,6 +55,7 @@ from .base import (
 from .text_classification import TextClassificationPipeline
 from .text_generation import TextGenerationPipeline
 from .text2text_generation import Text2TextGenerationPipeline
+from .question_answering import QuestionAnsweringPipeline
 from .document_question_answering import DocumentQuestionAnsweringPipeline
 
 from ..models.auto.modeling_auto import (
@@ -66,7 +67,7 @@ from ..models.auto.modeling_auto import (
     # AutoModelForMaskedLM,
     # AutoModelForMaskGeneration,
     # AutoModelForObjectDetection,
-    # AutoModelForQuestionAnswering,
+    AutoModelForQuestionAnswering,
     AutoModelForSeq2SeqLM,
     AutoModelForSequenceClassification,
     # AutoModelForSpeechSeq2Seq,
@@ -125,6 +126,16 @@ SUPPORTED_TASKS = {
         },
         "type": "text",
     },
+    "question-answering": {
+        "impl": QuestionAnsweringPipeline,
+        "ms": (AutoModelForQuestionAnswering,),
+        "default": {
+            "model": {
+                "ms": ("distilbert/distilbert-base-cased-distilled-squad", "626af31"),
+            },
+        },
+        "type": "text",
+    },
     "document-question-answering": {
         "impl": DocumentQuestionAnsweringPipeline,
         "ms": (AutoModelForDocumentQuestionAnswering,),
@@ -167,11 +178,11 @@ def get_supported_tasks() -> List[str]:
 
 
 def model_info(
-    repo_id: str,
-    *,
-    timeout: Optional[float] = None,
-    securityStatus: Optional[bool] = None,
-    files_metadata: bool = False,
+        repo_id: str,
+        *,
+        timeout: Optional[float] = None,
+        securityStatus: Optional[bool] = None,
+        files_metadata: bool = False,
 ):
     path = f"{HF_ENDPOINT}/api/models/{repo_id}"
 
@@ -183,6 +194,7 @@ def model_info(
     r = requests.get(path, timeout=timeout, params=params)
     data = r.json()
     return EasyDict(**data)
+
 
 def get_task(model: str) -> str:
     if is_offline_mode():
@@ -261,17 +273,17 @@ def clean_custom_task(task_info):
 
 
 def pipeline(
-    task: str = None,
-    model: Optional[Union[str, "PreTrainedModel"]] = None,
-    config: Optional[Union[str, PretrainedConfig]] = None,
-    tokenizer: Optional[Union[str, PreTrainedTokenizer, "PreTrainedTokenizerFast"]] = None,
-    feature_extractor: Optional[Union[str, PreTrainedFeatureExtractor]] = None,
-    image_processor: Optional[str] = None,
-    use_fast: bool = True,
-    ms_dtype=None,
-    model_kwargs: Dict[str, Any] = None,
-    pipeline_class: Optional[Any] = None,
-    **kwargs,
+        task: str = None,
+        model: Optional[Union[str, "PreTrainedModel"]] = None,
+        config: Optional[Union[str, PretrainedConfig]] = None,
+        tokenizer: Optional[Union[str, PreTrainedTokenizer, "PreTrainedTokenizerFast"]] = None,
+        feature_extractor: Optional[Union[str, PreTrainedFeatureExtractor]] = None,
+        image_processor: Optional[str] = None,
+        use_fast: bool = True,
+        ms_dtype=None,
+        model_kwargs: Dict[str, Any] = None,
+        pipeline_class: Optional[Any] = None,
+        **kwargs,
 ) -> Pipeline:
     """
     Utility factory method to build a [`Pipeline`].
@@ -494,11 +506,11 @@ def pipeline(
     # TODO: we need to make `NO_IMAGE_PROCESSOR_TASKS` and `NO_FEATURE_EXTRACTOR_TASKS` more robust to avoid such issue.
     # This block is only temporarily to make CI green.
     if (
-        tokenizer is None
-        and not load_tokenizer
-        and normalized_task not in NO_TOKENIZER_TASKS
-        # Using class name to avoid importing the real class.
-        and model_config.__class__.__name__ in MULTI_MODEL_CONFIGS
+            tokenizer is None
+            and not load_tokenizer
+            and normalized_task not in NO_TOKENIZER_TASKS
+            # Using class name to avoid importing the real class.
+            and model_config.__class__.__name__ in MULTI_MODEL_CONFIGS
     ):
         # This is a special category of models, that are fusions of multiple models
         # so the model_config might not define a tokenizer, but it seems to be
@@ -566,6 +578,7 @@ def pipeline(
 
     return pipeline_class(model=model, task=task, **kwargs)
 
+
 __all__ = [
     'CsvPipelineDataFormat',
     'JsonPipelineDataFormat',
@@ -575,6 +588,7 @@ __all__ = [
     'TextClassificationPipeline',
     'Text2TextGenerationPipeline',
     'TextGenerationPipeline',
+    'QuestionAnsweringPipeline',
     'DocumentQuestionAnsweringPipeline',
     'pipeline',
 ]

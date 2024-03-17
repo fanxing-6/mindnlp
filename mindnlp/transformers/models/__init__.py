@@ -28,6 +28,7 @@ from . import (
     cpm,
     cpmant,
     cpmbee,
+    deberta,
     distilbert,
     electra,
     encodec,
@@ -46,6 +47,7 @@ from . import (
     gpt_pangu,
     graphormer,
     hubert,
+    layoutlm,
     llama,
     longformer,
     luke,
@@ -61,6 +63,7 @@ from . import (
     phi,
     pop2piano,
     qwen2,
+    reformer,
     roberta,
     rwkv,
     seamless_m4t,
@@ -86,6 +89,7 @@ from .codegen import *
 from .cpm import *
 from .cpmant import *
 from .cpmbee import *
+from .deberta import *
 from .distilbert import *
 from .electra import *
 from .encodec import *
@@ -104,6 +108,7 @@ from .gpt_pangu import *
 from .gpt2 import *
 from .graphormer import *
 from .hubert import *
+from .layoutlm import *
 from .llama import *
 from .longformer import *
 from .luke import *
@@ -119,6 +124,7 @@ from .opt import *
 from .phi import *
 from .pop2piano import *
 from .qwen2 import *
+from .reformer import *
 from .roberta import *
 from .rwkv import *
 from .seamless_m4t import *
@@ -144,6 +150,7 @@ __all__.extend(codegen.__all__)
 __all__.extend(cpm.__all__)
 __all__.extend(cpmant.__all__)
 __all__.extend(cpmbee.__all__)
+__all__.extend(deberta.__all__)
 __all__.extend(distilbert.__all__)
 __all__.extend(encodec.__all__)
 __all__.extend(ernie.__all__)
@@ -162,6 +169,7 @@ __all__.extend(gpt_bigcode.__all__)
 __all__.extend(gpt2.__all__)
 __all__.extend(graphormer.__all__)
 __all__.extend(hubert.__all__)
+__all__.extend(layoutlm.__all__)
 __all__.extend(llama.__all__)
 __all__.extend(longformer.__all__)
 __all__.extend(luke.__all__)
@@ -177,6 +185,7 @@ __all__.extend(opt.__all__)
 __all__.extend(phi.__all__)
 __all__.extend(pop2piano.__all__)
 __all__.extend(qwen2.__all__)
+__all__.extend(reformer.__all__)
 __all__.extend(roberta.__all__)
 __all__.extend(rwkv.__all__)
 __all__.extend(seamless_m4t.__all__)

@@ -65,6 +65,8 @@ from .import_utils import (
     is_scipy_available,
     is_pyctcdecode_available,
     is_vision_available,
+    is_sentencepiece_available,
+    is_tokenizers_available,
     is_detectron2_available,
     is_pytesseract_available
 )
@@ -165,6 +167,17 @@ def parse_int_from_env(key, default=None):
             raise ValueError(f"If set, {key} must be a int.") from exc
     return _value
 
+def require_tokenizers(test_case):
+    """
+    Decorator marking a test that requires 🤗 Tokenizers. These tests are skipped when 🤗 Tokenizers isn't installed.
+    """
+    return unittest.skipUnless(is_tokenizers_available(), "test requires tokenizers")(test_case)
+
+def require_sentencepiece(test_case):
+    """
+    Decorator marking a test that requires SentencePiece. These tests are skipped when SentencePiece isn't installed.
+    """
+    return unittest.skipUnless(is_sentencepiece_available(), "test requires SentencePiece")(test_case)
 
 def require_mindspore(test_case):
     """

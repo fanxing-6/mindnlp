@@ -23,9 +23,7 @@ from mindnlp.utils import logging
 from .auto_factory import _BaseAutoModelClass, _LazyAutoMapping
 from .configuration_auto import CONFIG_MAPPING_NAMES
 
-
 logger = logging.get_logger(__name__)
-
 
 MODEL_MAPPING_NAMES = OrderedDict(
     [
@@ -43,7 +41,7 @@ MODEL_MAPPING_NAMES = OrderedDict(
         ("chatglm", "ChatGLMModel"),
         ("clip", "CLIPModel"),
         ("clip_vision_model", "CLIPVisionModel"),
-        ('encodec','EncodecModel'),
+        ('encodec', 'EncodecModel'),
         ("esm", "EsmModel"),
         ("ernie", "ErnieModel"),
         ("ernie_m", "ErnieMModel"),
@@ -53,9 +51,10 @@ MODEL_MAPPING_NAMES = OrderedDict(
         ("gpt", "GPTModel"),
         ("gpt2", "GPT2Model"),
         ("gpt_pangu", "GPTPanguModel"),
+        ("layoutlmv2", "LayoutLMv2Model"),
         ("longformer", "LongformerModel"),
         ("mamba", "MambaModel"),
-        ('mbart','MBartModel'),
+        ('mbart', 'MBartModel'),
         ('minicpm', 'MiniCPMModel'),
         ("mistral", "MistralModel"),
         ("mixtral", "MixtralModel"),
@@ -130,7 +129,6 @@ MODEL_FOR_CAUSAL_LM_MAPPING_NAMES = OrderedDict(
         ("xlm-roberta", "XLMRobertaForCausalLM"),
     ]
 )
-
 
 MODEL_FOR_IMAGE_CLASSIFICATION_MAPPING_NAMES = OrderedDict(
     [
@@ -319,6 +317,7 @@ MODEL_FOR_SEQUENCE_CLASSIFICATION_MAPPING_NAMES = OrderedDict(
         ("bloom", "BloomForSequenceClassification"),
         ("esm", "EsmForSequenceClassification"),
         ("falcon", "FalconForSequenceClassification"),
+        ("layoutlmv2", "LayoutLMv2ForSequenceClassification"),
         ('minicpm', 'MiniCPMForSequenceClassification'),
         ("mistral", "MistralForSequenceClassification"),
         ("mixtral", "MixtralForSequenceClassification"),
@@ -782,6 +781,7 @@ class AutoModel(_BaseAutoModelClass):
 class AutoModelForPreTraining(_BaseAutoModelClass):
     _model_mapping = MODEL_FOR_PRETRAINING_MAPPING
 
+
 # Private on purpose, the public class will add the deprecation warnings.
 class _AutoModelWithLMHead(_BaseAutoModelClass):
     _model_mapping = MODEL_WITH_LM_HEAD_MAPPING
@@ -817,7 +817,6 @@ class AutoModelForVisualQuestionAnswering(_BaseAutoModelClass):
 
 class AutoModelForDocumentQuestionAnswering(_BaseAutoModelClass):
     _model_mapping = MODEL_FOR_DOCUMENT_QUESTION_ANSWERING_MAPPING
-
 
 
 class AutoModelForTokenClassification(_BaseAutoModelClass):

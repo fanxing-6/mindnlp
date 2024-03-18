@@ -25,8 +25,7 @@ LAYOUTLMV2_PRETRAINED_CONFIG_ARCHIVE_MAP = {
 }
 
 # soft dependency
-if is_detectron2_available():
-    import detectron2
+
 
 
 class LayoutLMv2Config(PretrainedConfig):
@@ -175,9 +174,6 @@ class LayoutLMv2Config(PretrainedConfig):
         self.has_relative_attention_bias = has_relative_attention_bias
         self.has_spatial_attention_bias = has_spatial_attention_bias
         self.has_visual_segment_embedding = has_visual_segment_embedding
-        self.detectron2_config_args = (
-            detectron2_config_args if detectron2_config_args is not None else self.get_default_detectron2_config()
-        )
 
     @classmethod
     def get_default_detectron2_config(self):
@@ -210,16 +206,6 @@ class LayoutLMv2Config(PretrainedConfig):
             "MODEL.RESNETS.STRIDE_IN_1X1": False,
         }
 
-    def get_detectron2_config(self):
-        detectron2_config = detectron2.config.get_cfg()
-        for k, v in self.detectron2_config_args.items():
-            attributes = k.split(".")
-            to_set = detectron2_config
-            for attribute in attributes[:-1]:
-                to_set = getattr(to_set, attribute)
-            setattr(to_set, attributes[-1], v)
-
-        return detectron2_config
 
 
 __all__ = ["LAYOUTLMV2_PRETRAINED_CONFIG_ARCHIVE_MAP", "LayoutLMv2Config"]

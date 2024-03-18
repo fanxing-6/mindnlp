@@ -19,9 +19,10 @@ Processor class for LayoutLMv2.
 import warnings
 from typing import List, Optional, Union
 
+from mindspore import TensorType
+
 from ...processing_utils import ProcessorMixin
 from ...tokenization_utils_base import BatchEncoding, PaddingStrategy, PreTokenizedInput, TextInput, TruncationStrategy
-from ...utils import TensorType
 
 
 class LayoutLMv2Processor(ProcessorMixin):
@@ -67,27 +68,27 @@ class LayoutLMv2Processor(ProcessorMixin):
         super().__init__(image_processor, tokenizer)
 
     def __call__(
-        self,
-        images,
-        text: Union[TextInput, PreTokenizedInput, List[TextInput], List[PreTokenizedInput]] = None,
-        text_pair: Optional[Union[PreTokenizedInput, List[PreTokenizedInput]]] = None,
-        boxes: Union[List[List[int]], List[List[List[int]]]] = None,
-        word_labels: Optional[Union[List[int], List[List[int]]]] = None,
-        add_special_tokens: bool = True,
-        padding: Union[bool, str, PaddingStrategy] = False,
-        truncation: Union[bool, str, TruncationStrategy] = False,
-        max_length: Optional[int] = None,
-        stride: int = 0,
-        pad_to_multiple_of: Optional[int] = None,
-        return_token_type_ids: Optional[bool] = None,
-        return_attention_mask: Optional[bool] = None,
-        return_overflowing_tokens: bool = False,
-        return_special_tokens_mask: bool = False,
-        return_offsets_mapping: bool = False,
-        return_length: bool = False,
-        verbose: bool = True,
-        return_tensors: Optional[Union[str, TensorType]] = None,
-        **kwargs,
+            self,
+            images,
+            text: Union[TextInput, PreTokenizedInput, List[TextInput], List[PreTokenizedInput]] = None,
+            text_pair: Optional[Union[PreTokenizedInput, List[PreTokenizedInput]]] = None,
+            boxes: Union[List[List[int]], List[List[List[int]]]] = None,
+            word_labels: Optional[Union[List[int], List[List[int]]]] = None,
+            add_special_tokens: bool = True,
+            padding: Union[bool, str, PaddingStrategy] = False,
+            truncation: Union[bool, str, TruncationStrategy] = False,
+            max_length: Optional[int] = None,
+            stride: int = 0,
+            pad_to_multiple_of: Optional[int] = None,
+            return_token_type_ids: Optional[bool] = None,
+            return_attention_mask: Optional[bool] = None,
+            return_overflowing_tokens: bool = False,
+            return_special_tokens_mask: bool = False,
+            return_offsets_mapping: bool = False,
+            return_length: bool = False,
+            verbose: bool = True,
+            return_tensors: Optional[Union[str, TensorType]] = None,
+            **kwargs,
     ) -> BatchEncoding:
         """
         This method first forwards the `images` argument to [`~LayoutLMv2ImageProcessor.__call__`]. In case
@@ -199,3 +200,6 @@ class LayoutLMv2Processor(ProcessorMixin):
             FutureWarning,
         )
         return self.image_processor
+
+
+__all__ = ["LayoutLMv2Processor"]

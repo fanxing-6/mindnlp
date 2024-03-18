@@ -15,20 +15,23 @@
 """ PyTorch LayoutLMv2 model."""
 
 import math
+from abc import abstractmethod
 from typing import Optional, Tuple, Union
 
 import mindspore
+import mindspore as ms
 import numpy as np
-from detectron2.modeling.backbone.fpn import build_resnet_fpn_backbone
+# from detectron2.modeling.backbone.fpn import build_resnet_fpn_backbone
 from mindspore.nn.layer.normalization import _BatchNorm
 from mindspore.ops.operations._inner_ops import SyncBatchNorm
 
 from mindnlp.transformers.ms_utils import apply_chunking_to_forward
 from mindspore import nn, Tensor, ops, Parameter
-from mindspore.common.initializer import Normal, initializer
+from mindspore.common.initializer import Normal, initializer, Constant
 from mindspore.nn import CrossEntropyLoss, BCEWithLogitsLoss, MSELoss
 
 from mindnlp.utils import is_detectron2_available, logging, requires_backends
+from .visual_backbone import build_resnet_fpn_backbone, read_config
 from ...activations import ACT2FN
 from ...modeling_outputs import (
     BaseModelOutput,
@@ -41,9 +44,9 @@ from ...modeling_utils import PreTrainedModel
 from .configuration_layoutlmv2 import LayoutLMv2Config
 
 # soft dependency
-if is_detectron2_available():
-    import detectron2
-    from detectron2.modeling import META_ARCH_REGISTRY
+# if is_detectron2_available():
+#     import detectron2
+#     from detectron2.modeling import META_ARCH_REGISTRY
 
 logger = logging.get_logger(__name__)
 
@@ -74,8 +77,12 @@ class LayoutLMv2Embeddings(nn.Cell):
         self.LayerNorm = nn.LayerNorm([config.hidden_size], epsilon=config.layer_norm_eps)
         self.dropout = nn.Dropout(p=config.hidden_dropout_prob)
 
-        self.register_buffer(
-            "position_ids", ops.arange(config.max_position_embeddings).broadcast_to((1, -1)), persistent=False
+        self.position_ids = Parameter(
+            mindspore.Tensor(np.arange(0, config.max_position_embeddings)).broadcast_to(
+                (1, -1)
+            ),
+            name="position_ids",
+            requires_grad=False,
         )
 
     def _calc_spatial_position_embeddings(self, bbox):
@@ -121,9 +128,9 @@ class LayoutLMv2SelfAttention(nn.Cell):
         self.has_spatial_attention_bias = config.has_spatial_attention_bias
 
         if config.fast_qkv:
-            self.qkv_linear = nn.Dense(config.hidden_size, 3 * self.all_head_size, bias=False)
-            self.q_bias = Parameter(ops.zeros(1, 1, self.all_head_size))
-            self.v_bias = Parameter(ops.zeros(1, 1, self.all_head_size))
+            self.qkv_linear = nn.Dense(config.hidden_size, 3 * self.all_head_size, has_bias=False)
+            self.q_bias = Parameter(initializer(Constant(0.0), [1, 1, self.all_head_size], mindspore.float32))
+            self.v_bias = Parameter(initializer(Constant(0.0), [1, 1, self.all_head_size], mindspore.float32))
         else:
             self.query = nn.Dense(config.hidden_size, self.all_head_size)
             self.key = nn.Dense(config.hidden_size, self.all_head_size)
@@ -176,10 +183,8 @@ class LayoutLMv2SelfAttention(nn.Cell):
             attention_scores += rel_pos
         if self.has_spatial_attention_bias:
             attention_scores += rel_2d_pos
-        attention_scores = attention_scores.float().masked_fill_(
-            attention_mask.to(mindspore.bool_),
-            mindspore.tensor(np.finfo(mindspore.dtype_to_nptype(attention_scores.dtype)).min)
-
+        attention_scores = ops.masked_fill(
+            attention_scores.astype(ms.float32), ops.stop_gradient(attention_mask.astype(ms.bool_)), float("-1e10")
         )
         attention_probs = ops.softmax(attention_scores, axis=-1, dtype=mindspore.float32).type_as(value_layer)
         # This is actually dropping out entire tokens to attend to, which might
@@ -315,45 +320,31 @@ class LayoutLMv2Layer(nn.Cell):
         return layer_output
 
 
-def relative_position_bucket(relative_position, bidirectional=True, num_buckets=32, max_distance=128):
-    """
-    Adapted from Mesh Tensorflow:
-    https://github.com/tensorflow/mesh/blob/0cb87fe07da627bf0b7e60475d59f95ed6b5be3d/mesh_tensorflow/transformer/transformer_layers.py#L593
-    Translate relative position to a bucket number for relative attention. The relative position is defined as
-    memory_position - query_position, i.e. the distance in tokens from the attending position to the attended-to
-    position. If bidirectional=False, then positive relative positions are invalid. We use smaller buckets for small
-    absolute relative_position and larger buckets for larger absolute relative_positions. All relative positions
-    >=max_distance map to the same bucket. All relative positions <=-max_distance map to the same bucket. This should
-    allow for more graceful generalization to longer sequences than the model has been trained on.
-
-    Args:
-        relative_position: an int32 Tensor
-        bidirectional: a boolean - whether the attention is bidirectional
-        num_buckets: an integer
-        max_distance: an integer
-
-    Returns:
-        a Tensor with the same shape as relative_position, containing int32 values in the range [0, num_buckets)
-    """
-
+def relative_position_bucket(
+        relative_position, bidirectional=True, num_buckets=32, max_distance=128
+):
     ret = 0
     if bidirectional:
         num_buckets //= 2
-        ret += (relative_position > 0).long() * num_buckets
+        ret += (relative_position > 0).astype(ms.int64) * num_buckets
         n = ops.abs(relative_position)
     else:
-        n = ops.max(-relative_position, ops.zeros_like(relative_position))
-    # now n is in the range [0, inf)
-
+        n = ops.maximum(
+            -relative_position, ops.zeros_like(relative_position)
+        )  # to be confirmed
+    # Now n is in the range [0, inf)
     # half of the buckets are for exact increments in positions
     max_exact = num_buckets // 2
     is_small = n < max_exact
 
     # The other half of the buckets are for logarithmically bigger bins in positions up to max_distance
     val_if_large = max_exact + (
-            ops.log(n.float() / max_exact) / math.log(max_distance / max_exact) * (num_buckets - max_exact)
-    ).to(mindspore.int64)
-    val_if_large = ops.min(val_if_large, ops.full_like(val_if_large, num_buckets - 1))
+            ops.log(n.astype(ms.float32) / max_exact) / math.log(max_distance / max_exact) * (num_buckets - max_exact)
+    ).astype(ms.int64)
+
+    val_if_large = ops.minimum(
+        val_if_large, ops.full_like(val_if_large, num_buckets - 1)
+    )
 
     ret += ops.where(is_small, n, val_if_large)
     return ret
@@ -371,13 +362,13 @@ class LayoutLMv2Encoder(nn.Cell):
         if self.has_relative_attention_bias:
             self.rel_pos_bins = config.rel_pos_bins
             self.max_rel_pos = config.max_rel_pos
-            self.rel_pos_bias = nn.Dense(self.rel_pos_bins, config.num_attention_heads, bias=False)
+            self.rel_pos_bias = nn.Dense(self.rel_pos_bins, config.num_attention_heads, has_bias=False)
 
         if self.has_spatial_attention_bias:
             self.max_rel_2d_pos = config.max_rel_2d_pos
             self.rel_2d_pos_bins = config.rel_2d_pos_bins
-            self.rel_pos_x_bias = nn.Dense(self.rel_2d_pos_bins, config.num_attention_heads, bias=False)
-            self.rel_pos_y_bias = nn.Dense(self.rel_2d_pos_bins, config.num_attention_heads, bias=False)
+            self.rel_pos_x_bias = nn.Dense(self.rel_2d_pos_bins, config.num_attention_heads, has_bias=False)
+            self.rel_pos_y_bias = nn.Dense(self.rel_2d_pos_bins, config.num_attention_heads, has_bias=False)
 
         self.gradient_checkpointing = False
 
@@ -508,54 +499,59 @@ class LayoutLMv2PreTrainedModel(PreTrainedModel):
             cell.bias.set_data(initializer('zeros', cell.bias.shape, cell.bias.dtype))
 
 
-def my_convert_sync_batchnorm(module, process_group=None):
-    # same as `nn.modules.SyncBatchNorm.convert_sync_batchnorm` but allowing converting from `detectron2.layers.FrozenBatchNorm2d`
-    if isinstance(module, _BatchNorm):
-        return nn.modules.SyncBatchNorm.convert_sync_batchnorm(module, process_group)
-    module_output = module
-    if isinstance(module, detectron2.layers.FrozenBatchNorm2d):
-        module_output = SyncBatchNorm(
-            num_features=module.num_features,
-            epsilon=module.eps,
-            affine=True,
-            track_running_stats=True,
-            process_group=process_group,
-        )
-        module_output.weight = Parameter(module.weight)
-        module_output.bias = Parameter(module.bias)
-        module_output.running_mean = module.running_mean
-        module_output.running_var = module.running_var
-        module_output.num_batches_tracked = mindspore.tensor(0, dtype=mindspore.int64)
-    for name, child in module.named_children():
-        module_output.add_module(name, my_convert_sync_batchnorm(child, process_group))
-    del module
-    return module_output
+# def my_convert_sync_batchnorm(module, process_group=None):
+#     # same as `nn.modules.SyncBatchNorm.convert_sync_batchnorm` but allowing converting from `detectron2.layers.FrozenBatchNorm2d`
+#     if isinstance(module, _BatchNorm):
+#         return nn.modules.SyncBatchNorm.convert_sync_batchnorm(module, process_group)
+#     module_output = module
+#     if isinstance(module, detectron2.layers.FrozenBatchNorm2d):
+#         module_output = SyncBatchNorm(
+#             num_features=module.num_features,
+#             epsilon=module.eps,
+#             affine=True,
+#             track_running_stats=True,
+#             process_group=process_group,
+#         )
+#         module_output.weight = Parameter(module.weight)
+#         module_output.bias = Parameter(module.bias)
+#         module_output.running_mean = module.running_mean
+#         module_output.running_var = module.running_var
+#         module_output.num_batches_tracked = mindspore.tensor(0, dtype=mindspore.int64)
+#     for name, child in module.named_children():
+#         module_output.add_module(name, my_convert_sync_batchnorm(child, process_group))
+#     del module
+#     return module_output
 
 
 class LayoutLMv2VisualBackbone(nn.Cell):
     def __init__(self, config):
         super().__init__()
-        self.cfg = config.get_detectron2_config()
-        meta_arch = self.cfg.MODEL.META_ARCHITECTURE
-        model = META_ARCH_REGISTRY.get(meta_arch)(self.cfg)
-        assert isinstance(model.backbone, detectron2.modeling.backbone.FPN)
-        self.backbone = model.backbone
-        # TODO:可能有问题
-        # self.backbone = build_resnet_fpn_backbone(self.cfg)
+        # self.cfg = config.get_detectron2_config()
+        # meta_arch = self.cfg.MODEL.META_ARCHITECTURE
+        # model = META_ARCH_REGISTRY.get(meta_arch)(self.cfg)
+        # assert isinstance(model.backbone, detectron2.modeling.backbone.FPN)
+        # self.backbone = model.backbone
+        self.cfg = read_config()
+        self.backbone = build_resnet_fpn_backbone(self.cfg)
 
-        assert len(self.cfg.MODEL.PIXEL_MEAN) == len(self.cfg.MODEL.PIXEL_STD)
+        if len(self.cfg.MODEL.PIXEL_MEAN) != len(self.cfg.MODEL.PIXEL_STD):
+            raise ValueError(
+                "cfg.model.pixel_mean is not equal with cfg.model.pixel_std."
+            )
         num_channels = len(self.cfg.MODEL.PIXEL_MEAN)
-        self.register_buffer(
-            "pixel_mean",
-            mindspore.Tensor(self.cfg.MODEL.PIXEL_MEAN).view(num_channels, 1, 1),
-            persistent=False,
+        self.pixel_mean = Parameter(
+            mindspore.Tensor(self.cfg.MODEL.PIXEL_MEAN).reshape((num_channels, 1, 1)),
+            name="pixel_mean",
+            requires_grad=False,
         )
-        self.register_buffer(
-            "pixel_std", mindspore.Tensor(self.cfg.MODEL.PIXEL_STD).view(num_channels, 1, 1), persistent=False
+        self.pixel_std = Parameter(
+            mindspore.Tensor(self.cfg.MODEL.PIXEL_STD).reshape((num_channels, 1, 1)),
+            name="pixel_std",
+            requires_grad=False,
         )
         self.out_feature_key = "p2"
         # are_deterministic_algorithms_enabled is disabled here
-        self.pool = nn.AdaptiveAvgPool2d(config.image_feature_pool_shape[:2])
+        self.pool = nn.AdaptiveAvgPool2d(tuple(config.image_feature_pool_shape[:2]))
         if len(config.image_feature_pool_shape) == 2:
             config.image_feature_pool_shape.append(self.backbone.output_shape()[self.out_feature_key].channels)
         assert self.backbone.output_shape()[self.out_feature_key].channels == config.image_feature_pool_shape[2]
@@ -678,8 +674,9 @@ class LayoutLMv2Pooler(nn.Cell):
 
 class LayoutLMv2Model(LayoutLMv2PreTrainedModel):
     def __init__(self, config):
-        requires_backends(self, "detectron2")
+        # requires_backends(self, "detectron2")
         super().__init__(config)
+        mindspore.set_context(pynative_synchronize=True)
         self.config = config
         self.has_visual_segment_embedding = config.has_visual_segment_embedding
         self.embeddings = LayoutLMv2Embeddings(config)
@@ -719,6 +716,7 @@ class LayoutLMv2Model(LayoutLMv2PreTrainedModel):
 
         if inputs_embeds is None:
             inputs_embeds = self.embeddings.word_embeddings(input_ids)
+
         position_embeddings = self.embeddings.position_embeddings(position_ids)
         spatial_position_embeddings = self.embeddings._calc_spatial_position_embeddings(bbox)
         token_type_embeddings = self.embeddings.token_type_embeddings(token_type_ids)
@@ -729,51 +727,47 @@ class LayoutLMv2Model(LayoutLMv2PreTrainedModel):
         return embeddings
 
     def _calc_img_embeddings(self, image, bbox, position_ids):
-        visual_embeddings = self.visual_proj(self.visual(image))
+        use_image_info = image is not None
         position_embeddings = self.embeddings.position_embeddings(position_ids)
-        spatial_position_embeddings = self.embeddings._calc_spatial_position_embeddings(bbox)
-        embeddings = visual_embeddings + position_embeddings + spatial_position_embeddings
+        spatial_position_embeddings = self.embeddings._calc_spatial_position_embeddings(
+            bbox
+        )
+        if use_image_info:
+            visual_embeddings = self.visual_proj(self.visual(image.astype(mindspore.float32)))
+            embeddings = (
+                    visual_embeddings + position_embeddings + spatial_position_embeddings
+            )
+        else:
+            embeddings = position_embeddings + spatial_position_embeddings
         if self.has_visual_segment_embedding:
             embeddings += self.visual_segment_embedding
         embeddings = self.visual_LayerNorm(embeddings)
         embeddings = self.visual_dropout(embeddings)
         return embeddings
 
-    def _calc_visual_bbox(self, image_feature_pool_shape, bbox, device, final_shape):
-        visual_bbox_x = ops.div(
-            ops.arange(
-                0,
-                1000 * (image_feature_pool_shape[1] + 1),
-                1000,
-
-                dtype=bbox.dtype,
-            ),
-            self.config.image_feature_pool_shape[1],
-            rounding_mode="floor",
+    def _calc_visual_bbox(self, image_feature_pool_shape, bbox, visual_shape):
+        x_size = image_feature_pool_shape[1]
+        y_size = image_feature_pool_shape[0]
+        visual_bbox_x = mindspore.Tensor(
+            np.arange(0, 1000 * (x_size + 1), 1000) // x_size, dtype=mindspore.int64
         )
-        visual_bbox_y = ops.div(
-            ops.arange(
-                0,
-                1000 * (self.config.image_feature_pool_shape[0] + 1),
-                1000,
-
-                dtype=bbox.dtype,
-            ),
-            self.config.image_feature_pool_shape[0],
-            rounding_mode="floor",
+        visual_bbox_y = mindspore.Tensor(
+            np.arange(0, 1000 * (y_size + 1), 1000) // y_size, dtype=mindspore.int64
         )
+        expand_shape = image_feature_pool_shape[0:2]
+        expand_shape = tuple(expand_shape)
         visual_bbox = ops.stack(
             [
-                visual_bbox_x[:-1].repeat(image_feature_pool_shape[0], 1),
-                visual_bbox_y[:-1].repeat(image_feature_pool_shape[1], 1).swapaxes(0, 1),
-                visual_bbox_x[1:].repeat(image_feature_pool_shape[0], 1),
-                visual_bbox_y[1:].repeat(image_feature_pool_shape[1], 1).swapaxes(0, 1),
+                visual_bbox_x[:-1].broadcast_to(expand_shape),
+                visual_bbox_y[:-1].broadcast_to(expand_shape[::-1]).transpose((1, 0)),
+                visual_bbox_x[1:].broadcast_to(expand_shape),
+                visual_bbox_y[1:].broadcast_to(expand_shape[::-1]).transpose((1, 0)),
             ],
             axis=-1,
-        ).view(-1, bbox.size(-1))
-
-        visual_bbox = visual_bbox.repeat(final_shape[0], 1, 1)
-
+        ).reshape((expand_shape[0] * expand_shape[1], ops.shape(bbox)[-1]))
+        visual_bbox = visual_bbox.broadcast_to(
+            (visual_shape[0], visual_bbox.shape[0], visual_bbox.shape[1])
+        )
         return visual_bbox
 
     def _get_input_shape(self, input_ids=None, inputs_embeds=None):
@@ -837,23 +831,22 @@ class LayoutLMv2Model(LayoutLMv2PreTrainedModel):
         return_dict = return_dict if return_dict is not None else self.config.use_return_dict
 
         input_shape = self._get_input_shape(input_ids, inputs_embeds)
-        device = input_ids.device if input_ids is not None else inputs_embeds.device
 
         visual_shape = list(input_shape)
         visual_shape[1] = self.config.image_feature_pool_shape[0] * self.config.image_feature_pool_shape[1]
-        visual_shape = ops.Size(visual_shape)
+        # visual_shape = ops.Size(visual_shape)
         # needs a new copy of input_shape for tracing. Otherwise wrong dimensions will occur
         final_shape = list(self._get_input_shape(input_ids, inputs_embeds))
         final_shape[1] += visual_shape[1]
-        final_shape = ops.Size(final_shape)
+        # final_shape = ops.Size(final_shape)
 
-        visual_bbox = self._calc_visual_bbox(self.config.image_feature_pool_shape, bbox, device, final_shape)
+        visual_bbox = self._calc_visual_bbox(self.config.image_feature_pool_shape, bbox, final_shape)
         final_bbox = ops.cat([bbox, visual_bbox], axis=1)
 
         if attention_mask is None:
             attention_mask = ops.ones(input_shape)
 
-        visual_attention_mask = ops.ones(visual_shape)
+        visual_attention_mask = ops.ones(tuple(visual_shape), dtype=mindspore.int64)
         final_attention_mask = ops.cat([attention_mask, visual_attention_mask], axis=1)
 
         if token_type_ids is None:
@@ -864,8 +857,8 @@ class LayoutLMv2Model(LayoutLMv2PreTrainedModel):
             position_ids = self.embeddings.position_ids[:, :seq_length]
             position_ids = position_ids.broadcast_to(input_shape)
 
-        visual_position_ids = ops.arange(0, visual_shape[1], dtype=mindspore.int64).repeat(
-            input_shape[0], 1
+        visual_position_ids = mindspore.Tensor(np.arange(0, visual_shape[1])).broadcast_to(
+            (input_shape[0], visual_shape[1])
         )
         final_position_ids = ops.cat([position_ids, visual_position_ids], axis=1)
 
@@ -1007,8 +1000,6 @@ class LayoutLMv2ForSequenceClassification(LayoutLMv2PreTrainedModel):
             input_shape = inputs_embeds.shape[:-1]
         else:
             raise ValueError("You have to specify either input_ids or inputs_embeds")
-
-        device = input_ids.device if input_ids is not None else inputs_embeds.device
 
         visual_shape = list(input_shape)
         visual_shape[1] = self.config.image_feature_pool_shape[0] * self.config.image_feature_pool_shape[1]
@@ -1379,7 +1370,6 @@ __all__ = [
     "relative_position_bucket",
     "LayoutLMv2Encoder",
     "LayoutLMv2PreTrainedModel",
-    "my_convert_sync_batchnorm",
     "LayoutLMv2VisualBackbone",
     "LAYOUTLMV2_START_DOCSTRING",
     "LAYOUTLMV2_INPUTS_DOCSTRING",

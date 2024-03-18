@@ -17,6 +17,7 @@
 from typing import Dict, Optional, Union
 
 import numpy as np
+from mindnlp.utils import is_vision_available, is_pytesseract_available, logging, TensorType, requires_backends
 
 from ...image_processing_utils import BaseImageProcessor, BatchFeature, get_size_dict
 from ...image_transforms import flip_channel_order, resize, to_channel_dimension_format, to_pil_image
@@ -31,8 +32,6 @@ from ...image_utils import (
     validate_kwargs,
     validate_preprocess_arguments,
 )
-from ...utils import TensorType, is_pytesseract_available, is_vision_available, logging, requires_backends
-
 
 if is_vision_available():
     import PIL
@@ -54,10 +53,10 @@ def normalize_box(box, width, height):
 
 
 def apply_tesseract(
-    image: np.ndarray,
-    lang: Optional[str],
-    tesseract_config: Optional[str] = None,
-    input_data_format: Optional[Union[str, ChannelDimension]] = None,
+        image: np.ndarray,
+        lang: Optional[str],
+        tesseract_config: Optional[str] = None,
+        input_data_format: Optional[Union[str, ChannelDimension]] = None,
 ):
     """Applies Tesseract OCR on a document image, and returns recognized words + normalized bounding boxes."""
     tesseract_config = tesseract_config if tesseract_config is not None else ""
@@ -119,14 +118,14 @@ class LayoutLMv2ImageProcessor(BaseImageProcessor):
     model_input_names = ["pixel_values"]
 
     def __init__(
-        self,
-        do_resize: bool = True,
-        size: Dict[str, int] = None,
-        resample: PILImageResampling = PILImageResampling.BILINEAR,
-        apply_ocr: bool = True,
-        ocr_lang: Optional[str] = None,
-        tesseract_config: Optional[str] = "",
-        **kwargs,
+            self,
+            do_resize: bool = True,
+            size: Dict[str, int] = None,
+            resample: PILImageResampling = PILImageResampling.BILINEAR,
+            apply_ocr: bool = True,
+            ocr_lang: Optional[str] = None,
+            tesseract_config: Optional[str] = "",
+            **kwargs,
     ) -> None:
         super().__init__(**kwargs)
         size = size if size is not None else {"height": 224, "width": 224}
@@ -153,13 +152,13 @@ class LayoutLMv2ImageProcessor(BaseImageProcessor):
 
     # Copied from transformers.models.vit.image_processing_vit.ViTImageProcessor.resize
     def resize(
-        self,
-        image: np.ndarray,
-        size: Dict[str, int],
-        resample: PILImageResampling = PILImageResampling.BILINEAR,
-        data_format: Optional[Union[str, ChannelDimension]] = None,
-        input_data_format: Optional[Union[str, ChannelDimension]] = None,
-        **kwargs,
+            self,
+            image: np.ndarray,
+            size: Dict[str, int],
+            resample: PILImageResampling = PILImageResampling.BILINEAR,
+            data_format: Optional[Union[str, ChannelDimension]] = None,
+            input_data_format: Optional[Union[str, ChannelDimension]] = None,
+            **kwargs,
     ) -> np.ndarray:
         """
         Resize an image to `(size["height"], size["width"])`.
@@ -201,18 +200,18 @@ class LayoutLMv2ImageProcessor(BaseImageProcessor):
         )
 
     def preprocess(
-        self,
-        images: ImageInput,
-        do_resize: bool = None,
-        size: Dict[str, int] = None,
-        resample: PILImageResampling = None,
-        apply_ocr: bool = None,
-        ocr_lang: Optional[str] = None,
-        tesseract_config: Optional[str] = None,
-        return_tensors: Optional[Union[str, TensorType]] = None,
-        data_format: ChannelDimension = ChannelDimension.FIRST,
-        input_data_format: Optional[Union[str, ChannelDimension]] = None,
-        **kwargs,
+            self,
+            images: ImageInput,
+            do_resize: bool = None,
+            size: Dict[str, int] = None,
+            resample: PILImageResampling = None,
+            apply_ocr: bool = None,
+            ocr_lang: Optional[str] = None,
+            tesseract_config: Optional[str] = None,
+            return_tensors: Optional[Union[str, TensorType]] = None,
+            data_format: ChannelDimension = ChannelDimension.FIRST,
+            input_data_format: Optional[Union[str, ChannelDimension]] = None,
+            **kwargs,
     ) -> PIL.Image.Image:
         """
         Preprocess an image or batch of images.
@@ -304,3 +303,6 @@ class LayoutLMv2ImageProcessor(BaseImageProcessor):
             data["words"] = words_batch
             data["boxes"] = boxes_batch
         return data
+
+
+__all__ = ["LayoutLMv2ImageProcessor"]

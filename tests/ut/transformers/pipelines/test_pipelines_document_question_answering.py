@@ -14,6 +14,8 @@
 
 import unittest
 
+import mindspore
+
 from mindnlp.transformers import MODEL_FOR_DOCUMENT_QUESTION_ANSWERING_MAPPING, pipeline, AutoTokenizer
 from mindnlp.transformers.pipelines.document_question_answering import apply_tesseract
 
@@ -59,7 +61,7 @@ class DocumentQuestionAnsweringPipelineTests(unittest.TestCase):
             "document-question-answering", model=model, tokenizer=tokenizer, image_processor=processor
         )
 
-        image = INVOICE_URL
+        image = "INVOICE_URL"
         word_boxes = list(zip(*apply_tesseract(load_image(image), None, "")))
         question = "What is the placebo?"
         examples = [
@@ -93,11 +95,13 @@ class DocumentQuestionAnsweringPipelineTests(unittest.TestCase):
         )
 
     @require_mindspore
-    @require_detectron2
+    # @require_detectron2
     @require_pytesseract
     def test_small_model_pt(self):
+
         dqa_pipeline = pipeline("document-question-answering", model="hf-internal-testing/tiny-random-layoutlmv2")
         image = INVOICE_URL
+        # image = "/root/WSLProject/PycharmProject/mindnlp/invoice.png"
         question = "How many cats are there?"
 
         expected_output = [
@@ -112,17 +116,16 @@ class DocumentQuestionAnsweringPipelineTests(unittest.TestCase):
 
         # This image does not detect ANY text in it, meaning layoutlmv2 should fail.
         # Empty answer probably
-        image = "./tests/fixtures/tests_samples/COCO/000000039769.png"
+        image = "/root/WSLProject/PycharmProject/mindnlp/000000039769.png"
         outputs = dqa_pipeline(image=image, question=question, top_k=2)
         self.assertEqual(outputs, [])
 
         # We can optionnally pass directly the words and bounding boxes
-        image = "./tests/fixtures/tests_samples/COCO/000000039769.png"
+        image = "/root/WSLProject/PycharmProject/mindnlp/000000039769.png"
         words = []
         boxes = []
         outputs = dqa_pipeline(image=image, question=question, words=words, boxes=boxes, top_k=2)
         self.assertEqual(outputs, [])
-
 
     @slow
     @require_mindspore

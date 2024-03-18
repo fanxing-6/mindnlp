@@ -23,8 +23,7 @@ from typing import List, Union
 
 from mindnlp.configs import CONFIG_NAME
 from mindnlp.utils import logging
-from mindnlp.transformers.configuration_utils import PretrainedConfig # pylint: disable=R0401
-
+from mindnlp.transformers.configuration_utils import PretrainedConfig  # pylint: disable=R0401
 
 logger = logging.get_logger(__name__)
 
@@ -44,8 +43,8 @@ CONFIG_MAPPING_NAMES = OrderedDict(
         ("codegen", "CodeGenConfig"),
         ("cpmant", "CpmAntConfig"),
         ("cpmbee", "CpmBeeConfig"),
-        ("distilbert","DistilBertConfig"),
-        ("encodec","EncodecConfig"),
+        ("distilbert", "DistilBertConfig"),
+        ("encodec", "EncodecConfig"),
         ("esm", "EsmConfig"),
         ("falcon", "FalconConfig"),
         ("gemma", "GemmaConfig"),
@@ -54,7 +53,7 @@ CONFIG_MAPPING_NAMES = OrderedDict(
         ("gpt_pangu", "GPTPanguConfig"),
         ('hubert', 'HubertConfig'),
         ("mamba", "MambaConfig"),
-        ("mbart","MBartConfig"),
+        ("mbart", "MBartConfig"),
         ('minicpm', 'MiniCPMConfig'),
         ("mistral", "MistralConfig"),
         ("mixtral", "MixtralConfig"),
@@ -66,6 +65,7 @@ CONFIG_MAPPING_NAMES = OrderedDict(
         ('t5', 'T5Config'),
         ('wav2vec2', 'Wav2Vec2Config'),
         ('xlm-roberta', 'XLMRobertaConfig'),
+        ("layoutlmv2", "LayoutLMv2Config"),
     ]
 )
 

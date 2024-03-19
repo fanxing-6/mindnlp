@@ -98,7 +98,6 @@ class DocumentQuestionAnsweringPipelineTests(unittest.TestCase):
     # @require_detectron2
     @require_pytesseract
     def test_small_model_pt(self):
-
         dqa_pipeline = pipeline("document-question-answering", model="hf-internal-testing/tiny-random-layoutlmv2")
         image = INVOICE_URL
         # image = "/root/WSLProject/PycharmProject/mindnlp/invoice.png"
@@ -127,9 +126,9 @@ class DocumentQuestionAnsweringPipelineTests(unittest.TestCase):
         outputs = dqa_pipeline(image=image, question=question, words=words, boxes=boxes, top_k=2)
         self.assertEqual(outputs, [])
 
-    @slow
+    # @slow
     @require_mindspore
-    @require_detectron2
+    # @require_detectron2
     @require_pytesseract
     def test_large_model_pt(self):
         dqa_pipeline = pipeline(
@@ -141,6 +140,7 @@ class DocumentQuestionAnsweringPipelineTests(unittest.TestCase):
         question = "What is the invoice number?"
 
         outputs = dqa_pipeline(image=image, question=question, top_k=2)
+        print(outputs)
         self.assertEqual(
             nested_simplify(outputs, decimals=4),
             [
@@ -150,6 +150,7 @@ class DocumentQuestionAnsweringPipelineTests(unittest.TestCase):
         )
 
         outputs = dqa_pipeline({"image": image, "question": question}, top_k=2)
+        print(outputs)
         self.assertEqual(
             nested_simplify(outputs, decimals=4),
             [
@@ -172,9 +173,9 @@ class DocumentQuestionAnsweringPipelineTests(unittest.TestCase):
             * 2,
         )
 
-    @slow
+    # @slow
     @require_mindspore
-    @require_detectron2
+    # @require_detectron2
     @require_pytesseract
     def test_large_model_pt_chunk(self):
         dqa_pipeline = pipeline(
@@ -279,7 +280,7 @@ class DocumentQuestionAnsweringPipelineTests(unittest.TestCase):
             ],
         )
 
-    @slow
+    # @slow
     @require_mindspore
     @require_pytesseract
     @require_vision
@@ -332,7 +333,7 @@ class DocumentQuestionAnsweringPipelineTests(unittest.TestCase):
             ],
         )
 
-    @slow
+    # @slow
     @require_mindspore
     def test_large_model_pt_donut(self):
         dqa_pipeline = pipeline(
